@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pyserial
+aiohttp
+pydantic
+python-dotenv
+sqlalchemy[asyncio]
+asyncpg
+alembic
+redis>=4.2.0
+tenacity
+psycopg2-binary

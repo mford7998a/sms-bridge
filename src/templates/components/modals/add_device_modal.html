@@ -1,0 +1,54 @@
+<div id="addDeviceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-card-bg rounded-lg max-w-2xl mx-auto mt-20 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Add New Device</h2>
+            <button onclick="hideAddDeviceModal()" class="text-gray-500 hover:text-gray-400">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form hx-post="/api/devices" hx-swap="none" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Device ID</label>
+                    <input type="text" name="id" required
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Device Type</label>
+                    <select name="type" required
+                            class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                        <option value="huawei">Huawei</option>
+                        <option value="sierra">Sierra Wireless</option>
+                        <option value="franklin">Franklin Wireless</option>
+                        <option value="fibocom">Fibocom</option>
+                        <option value="android">Android</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Phone Number</label>
+                    <input type="text" name="phone_number" required
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Port</label>
+                    <select name="port" required
+                            class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary"
+                            hx-get="/api/ports" hx-trigger="load">
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="hideAddDeviceModal()" 
+                        class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 rounded bg-accent-color hover:bg-accent-hover">
+                    Add Device
+                </button>
+            </div>
+        </form>
+    </div>
+</div> 

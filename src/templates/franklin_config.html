@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Franklin Wireless Configuration - SMS Bridge</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .config-section {
+            transition: all 0.3s ease;
+        }
+        .log-entry {
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Franklin Wireless Configuration</h1>
+            <a href="/" class="text-blue-500 hover:text-blue-600">← Back to Dashboard</a>
+        </div>
+
+        <!-- Device Selection -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Select Device</h2>
+            <select id="deviceSelect" class="w-full rounded border-gray-300 p-2"
+                    hx-get="/api/device-config" 
+                    hx-target="#configOptions">
+                {% for device in franklin_devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.model}} ({{device.port}})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="configForm" class="bg-white rounded-lg shadow p-6 mb-8"
+              hx-post="/api/franklin/configure"
+              hx-target="#configLog">
+            <h2 class="text-xl font-semibold mb-4">Configuration Options</h2>
+
+            <!-- Authentication -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">Authentication</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="change_password" class="mr-2">
+                        Change Admin Password
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="change_password">
+                        <input type="password" name="new_password" 
+                               placeholder="New Password"
+                               class="mt-1 block w-full rounded border-gray-300">
+                        <input type="password" name="confirm_password" 
+                               placeholder="Confirm Password"
+                               class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">Network Configuration</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="network_mode" class="mr-2">
+                        Set Network Mode
+                    </label>
+                    <div class="pl-6" data-show-if="network_mode">
+                        <select name="mode" class="mt-1 block w-full rounded border-gray-300">
+                            <option value="auto">Auto (All modes)</option>
+                            <option value="lte_only">4G/LTE Only</option>
+                            <option value="cdma_only">CDMA Only</option>
+                            <option value="gsm_only">GSM Only</option>
+                        </select>
+                    </div>
+
+                    <label class="flex items-center">
+                        <input type="checkbox" name="band_config" class="mr-2">
+                        Configure Bands
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="band_config">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_all" class="mr-2">
+                            Enable All Bands
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_2" class="mr-2">
+                                Band 2 (1900 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_4" class="mr-2">
+                                Band 4 (AWS)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_5" class="mr-2">
+                                Band 5 (850 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_12" class="mr-2">
+                                Band 12 (700 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_13" class="mr-2">
+                                Band 13 (700 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_25" class="mr-2">
+                                Band 25 (1900 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_26" class="mr-2">
+                                Band 26 (850 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_41" class="mr-2">
+                                Band 41 (2500 MHz)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">Advanced Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="carrier_aggregation" class="mr-2">
+                        Enable Carrier Aggregation
+                    </label>
+
+                    <label class="flex items-center">
+                        <input type="checkbox" name="roaming" class="mr-2">
+                        Enable Roaming
+                    </label>
+
+                    <label class="flex items-center">
+                        <input type="checkbox" name="custom_apn" class="mr-2">
+                        Configure Custom APN
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="custom_apn">
+                        <input type="text" name="apn_name" 
+                               placeholder="APN Name"
+                               class="mt-1 block w-full rounded border-gray-300">
+                        <input type="text" name="apn_user" 
+                               placeholder="Username (optional)"
+                               class="mt-1 block w-full rounded border-gray-300">
+                        <input type="text" name="apn_pass" 
+                               placeholder="Password (optional)"
+                               class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device-Specific Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">Device-Specific Settings</h3>
+                <div class="space-y-3">
+                    <!-- T9 Specific -->
+                    <div class="pl-6 space-y-2" data-show-if="model_t9">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="t9_unlock_bands" class="mr-2">
+                            Unlock All Bands (T9)
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="t9_remove_restrictions" class="mr-2">
+                            Remove Carrier Restrictions
+                        </label>
+                    </div>
+                    <!-- T10 Specific -->
+                    <div class="pl-6 space-y-2" data-show-if="model_t10">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="t10_enable_volte" class="mr-2">
+                            Enable VoLTE
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="t10_enable_ca" class="mr-2">
+                            Enable Advanced CA
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded">
+                Apply Configuration
+            </button>
+        </form>
+
+        <!-- Configuration Log -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Configuration Log</h2>
+            <div id="configLog" class="bg-gray-900 text-gray-100 rounded p-4 h-96 overflow-y-auto font-mono">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show/hide sections based on device model
+        document.getElementById('deviceSelect').addEventListener('change', function() {
+            const model = this.value.toLowerCase();
+            document.querySelectorAll('[data-show-if]').forEach(el => {
+                const condition = el.dataset.showIf;
+                if (condition.startsWith('model_')) {
+                    el.style.display = model.includes(condition.replace('model_', '')) ? 'block' : 'none';
+                }
+            });
+        });
+
+        // Show/hide dependent fields
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const dependentFields = document.querySelectorAll(`[data-show-if="${this.name}"]`);
+                dependentFields.forEach(field => {
+                    field.style.display = this.checked ? 'block' : 'none';
+                });
+
+                // Handle band selection logic
+                if (this.name === 'band_all') {
+                    document.querySelectorAll('[name^="band_"]:not([name="band_all"])').forEach(band => {
+                        band.checked = false;
+                        band.disabled = this.checked;
+                    });
+                } else if (this.name.startsWith('band_') && this.checked) {
+                    document.querySelector('[name="band_all"]').checked = false;
+                }
+            });
+        });
+
+        // Form validation
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            if (this.elements['change_password'].checked) {
+                const pass1 = this.elements['new_password'].value;
+                const pass2 = this.elements['confirm_password'].value;
+                if (pass1 !== pass2) {
+                    e.preventDefault();
+                    alert('Passwords do not match!');
+                    return;
+                }
+            }
+        });
+
+        // Handle form submission
+        htmx.on('#configForm', 'htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                const log = document.querySelector('#configLog');
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 

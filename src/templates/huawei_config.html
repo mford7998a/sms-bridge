@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Huawei Modem Configuration - SMS Bridge</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body class="bg-primary-bg text-text-primary">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Navigation -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Huawei Modem Configuration</h1>
+            <a href="/" class="text-accent-color hover:text-accent-hover">← Back to Dashboard</a>
+        </div>
+
+        <!-- Device Selection -->
+        <div class="bg-card-bg rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Select Device</h2>
+            <select id="deviceSelect" class="w-full rounded border-gray-300 p-2"
+                    hx-get="/api/device-config" 
+                    hx-target="#configOptions">
+                {% for device in huawei_devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.model}} ({{device.port}})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="configForm" class="bg-card-bg rounded-lg shadow p-6 mb-8"
+              hx-post="/api/huawei/configure"
+              hx-target="#configLog">
+            <h2 class="text-xl font-semibold mb-4">Configuration Options</h2>
+            
+            <!-- Basic Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Basic Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="unlock_device" class="mr-2">
+                        Unlock Device (Requires unlock code)
+                    </label>
+                    <div class="pl-6" data-show-if="unlock_device">
+                        <input type="text" name="unlock_code" 
+                               placeholder="Enter unlock code"
+                               class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="switch_to_modem" class="mr-2">
+                        Switch to Modem Mode (from CD-ROM/Storage mode)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Network Configuration</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="preferred_mode" class="mr-2">
+                        Set Preferred Network Mode
+                    </label>
+                    <div class="pl-6" data-show-if="preferred_mode">
+                        <select name="network_mode" class="mt-1 block w-full rounded border-gray-300">
+                            <option value="auto">Auto (All modes)</option>
+                            <option value="4g_only">4G/LTE Only</option>
+                            <option value="3g_only">3G Only</option>
+                            <option value="2g_only">2G Only</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="band_config" class="mr-2">
+                        Configure Bands
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="band_config">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_all" class="mr-2">
+                            Enable All Bands
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_1" class="mr-2">
+                                Band 1 (2100 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_2" class="mr-2">
+                                Band 2 (1900 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_3" class="mr-2">
+                                Band 3 (1800 MHz)
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_4" class="mr-2">
+                                Band 4 (AWS 1700/2100 MHz)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Advanced Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_at" class="mr-2">
+                        Enable Advanced AT Commands
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="enable_at">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="at_debug" class="mr-2">
+                            Enable Debug Mode
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="at_engineering" class="mr-2">
+                            Enable Engineering Mode
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="at_test" class="mr-2">
+                            Enable Test Commands
+                        </label>
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="custom_apn" class="mr-2">
+                        Configure Custom APN
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="custom_apn">
+                        <input type="text" name="apn_name" 
+                               placeholder="APN Name"
+                               class="mt-1 block w-full rounded border-gray-300">
+                        <input type="text" name="apn_user" 
+                               placeholder="Username (optional)"
+                               class="mt-1 block w-full rounded border-gray-300">
+                        <input type="text" name="apn_pass" 
+                               placeholder="Password (optional)"
+                               class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device-Specific Commands -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Device-Specific Commands</h3>
+                <div class="space-y-3">
+                    <!-- E303 Specific -->
+                    <div class="pl-6 space-y-2" data-show-if="model_e303">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="e303_unlock_bands" class="mr-2">
+                            Unlock All Bands (E303)
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="e303_remove_simlocks" class="mr-2">
+                            Remove SIM Locks
+                        </label>
+                    </div>
+                    <!-- E3372 Specific -->
+                    <div class="pl-6 space-y-2" data-show-if="model_e3372">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="e3372_hilink_stick" class="mr-2">
+                            Switch between HiLink/Stick Mode
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="e3372_unlock_carrier" class="mr-2">
+                            Remove Carrier Lock
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-accent-color hover:bg-accent-hover text-white font-semibold py-3 px-6 rounded">
+                Apply Configuration
+            </button>
+        </form>
+
+        <!-- Configuration Log -->
+        <div class="bg-card-bg rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Configuration Log</h2>
+            <div id="configLog" class="log-window">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show/hide sections based on device model
+        document.getElementById('deviceSelect').addEventListener('change', function() {
+            const model = this.value.toLowerCase();
+            document.querySelectorAll('[data-show-if]').forEach(el => {
+                const condition = el.dataset.showIf;
+                if (condition.startsWith('model_')) {
+                    el.style.display = model.includes(condition.replace('model_', '')) ? 'block' : 'none';
+                }
+            });
+        });
+
+        // Show/hide dependent fields
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const dependentFields = document.querySelectorAll(`[data-show-if="${this.name}"]`);
+                dependentFields.forEach(field => {
+                    field.style.display = this.checked ? 'block' : 'none';
+                });
+            });
+        });
+
+        // Handle form submission
+        htmx.on('#configForm', 'htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                const log = document.querySelector('#configLog');
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 

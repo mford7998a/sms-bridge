@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sierra Wireless Configuration - SMS Bridge</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body class="bg-primary-bg text-text-primary">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Navigation -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Sierra Wireless Configuration</h1>
+            <a href="/" class="text-accent-color hover:text-accent-hover">← Back to Dashboard</a>
+        </div>
+
+        <!-- Device Selection -->
+        <div class="bg-card-bg rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Select Device</h2>
+            <select id="deviceSelect" class="w-full rounded border-gray-300 p-2"
+                    hx-get="/api/device-config" 
+                    hx-target="#configOptions">
+                {% for device in sierra_devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.model}} ({{device.port}})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="configForm" class="bg-card-bg rounded-lg shadow p-6 mb-8"
+              hx-post="/api/sierra/configure"
+              hx-target="#configLog">
+            <h2 class="text-xl font-semibold mb-4">Configuration Options</h2>
+            
+            <!-- Basic Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Basic Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_advanced" class="mr-2">
+                        Enable Advanced Commands (AT!ENTERCND="A710")
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="set_generic" class="mr-2">
+                        Set Generic Image (AT!IMPREF="GENERIC")
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="set_interface" class="mr-2">
+                        Set Interface Mode (diag,nmea,modem,mbim) (AT!USBCOMP=1,1,0000100D)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Network Configuration</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="lte_only" class="mr-2">
+                        Set LTE Only Mode (Disable 3G fallback) (AT!SELRAT=06)
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="all_bands" class="mr-2">
+                        Enable All Bands (AT!BAND=00)
+                    </label>
+                    <div class="pl-6 space-y-2">
+                        <p class="text-sm text-gray-600">Or select specific bands:</p>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_b2" class="mr-2">
+                            B2 (1900MHz) Only
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_b4" class="mr-2">
+                            B4 (1700/2100MHz) Only
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_b12" class="mr-2">
+                            B12 (700MHz) Only
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_combo" class="mr-2">
+                            B2 + B4 + B12 Combination
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Identity -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Device Identity</h3>
+                <div class="space-y-3">
+                    <select name="device_identity" class="w-full rounded border-gray-300 p-2">
+                        <option value="">Keep Current Identity</option>
+                        <option value="generic">Generic Sierra Wireless EM7455</option>
+                        <option value="lenovo">Lenovo EM7455 (ThinkPad)</option>
+                        <option value="dell">Dell DW5811e (Latitude/Precision)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Advanced Options</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="disable_fastboot" class="mr-2">
+                        Disable Fast Boot (AT!CUSTOM="FASTENUMEN",2)
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="ignore_wdisable" class="mr-2">
+                        Ignore W_DISABLE Pin (AT!PCOFFEN=2)
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="force_usb2" class="mr-2">
+                        Force USB 2.0 Mode (AT!USBSPEED=0)
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="clear_settings" class="mr-2">
+                        Clear All Settings (AT!RMARESET=1)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-accent-color hover:bg-accent-hover text-white font-semibold py-3 px-6 rounded">
+                Apply Configuration
+            </button>
+        </form>
+
+        <!-- Configuration Log -->
+        <div class="bg-card-bg rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Configuration Log</h2>
+            <div id="configLog" class="log-window">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Disable conflicting options
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.name === 'all_bands' && this.checked) {
+                    // Disable specific band selections when "all bands" is checked
+                    document.querySelectorAll('[name^="band_"]').forEach(band => {
+                        band.checked = false;
+                        band.disabled = true;
+                    });
+                } else if (this.name.startsWith('band_') && this.checked) {
+                    // Disable "all bands" when specific band is selected
+                    document.querySelector('[name="all_bands"]').checked = false;
+                }
+            });
+        });
+
+        // Handle form submission
+        htmx.on('#configForm', 'htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                // Scroll log to bottom
+                const log = document.querySelector('#configLog');
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 

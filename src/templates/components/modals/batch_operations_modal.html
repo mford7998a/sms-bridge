@@ -1,0 +1,96 @@
+<div id="batchOperationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-card-bg rounded-lg max-w-4xl mx-auto mt-20 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Batch Operations</h2>
+            <button onclick="hideBatchOperationsModal()" class="text-gray-500 hover:text-gray-400">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Device Selection -->
+            <div class="bg-secondary-bg rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-3">Select Devices</h3>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    {% for device in devices %}
+                    <label class="flex items-center">
+                        <input type="checkbox" name="selected_devices" value="{{device.id}}" class="mr-2">
+                        {{device.type}} - {{device.id}} ({{device.phone_number}})
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Operations -->
+            <div class="bg-secondary-bg rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-3">Select Operation</h3>
+                <select id="batchOperation" class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                    <option value="restart">Restart Devices</option>
+                    <option value="update_apn">Update APN Settings</option>
+                    <option value="network_mode">Change Network Mode</option>
+                    <option value="enable_roaming">Enable Roaming</option>
+                    <option value="disable_roaming">Disable Roaming</option>
+                    <option value="factory_reset">Factory Reset</option>
+                </select>
+
+                <!-- Operation-specific settings -->
+                <div id="operationSettings" class="mt-4 space-y-4">
+                    <!-- APN Settings (hidden by default) -->
+                    <div id="apnSettings" class="hidden">
+                        <input type="text" placeholder="APN Name" class="w-full mb-2">
+                        <input type="text" placeholder="Username (optional)" class="w-full mb-2">
+                        <input type="text" placeholder="Password (optional)" class="w-full">
+                    </div>
+
+                    <!-- Network Mode Settings (hidden by default) -->
+                    <div id="networkModeSettings" class="hidden">
+                        <select class="w-full">
+                            <option value="auto">Auto (All modes)</option>
+                            <option value="4g_only">4G/LTE Only</option>
+                            <option value="3g_only">3G Only</option>
+                            <option value="2g_only">2G Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Options -->
+            <div class="bg-secondary-bg rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-3">Execution Options</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="parallel" class="mr-2">
+                        Execute in Parallel
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="continue_on_error" class="mr-2">
+                        Continue on Error
+                    </label>
+                </div>
+            </div>
+
+            <!-- Progress Display -->
+            <div class="bg-secondary-bg rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-3">Operation Progress</h3>
+                <div class="space-y-2">
+                    <div class="w-full bg-gray-700 rounded-full h-2.5">
+                        <div class="bg-accent-color h-2.5 rounded-full" style="width: 0%" id="batchProgress"></div>
+                    </div>
+                    <div id="batchStatus" class="text-sm text-gray-400">Ready to execute</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="hideBatchOperationsModal()" 
+                    class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500">
+                Cancel
+            </button>
+            <button onclick="executeBatchOperation()" 
+                    class="px-4 py-2 rounded bg-accent-color hover:bg-accent-hover">
+                Execute
+            </button>
+        </div>
+    </div>
+</div> 

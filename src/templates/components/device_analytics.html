@@ -1,0 +1,140 @@
+<div class="analytics-panel bg-card-bg rounded-lg shadow-lg p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Signal Quality Chart -->
+        <div class="card">
+            <h3 class="text-lg font-semibold mb-4">Signal Quality History</h3>
+            <canvas id="signalChart" height="200"></canvas>
+        </div>
+
+        <!-- Network Stats -->
+        <div class="card">
+            <h3 class="text-lg font-semibold mb-4">Network Statistics</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between">
+                    <span>Current Band:</span>
+                    <span class="font-mono">{{device.signal_details.band}}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>RSRP:</span>
+                    <span class="font-mono">{{device.signal_details.rsrp}} dBm</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>SINR:</span>
+                    <span class="font-mono">{{device.signal_details.sinr}} dB</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Cell ID:</span>
+                    <span class="font-mono">{{device.signal_details.cell_id}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Stats -->
+        <div class="card">
+            <h3 class="text-lg font-semibold mb-4">Message Statistics</h3>
+            <canvas id="messageChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+// Signal Quality Chart
+const signalCtx = document.getElementById('signalChart').getContext('2d');
+const signalChart = new Chart(signalCtx, {
+    type: 'line',
+    data: {
+        labels: [], // Will be populated with timestamps
+        datasets: [{
+            label: 'Signal Strength',
+            data: [], // Will be populated with signal values
+            borderColor: 'rgb(0, 180, 180)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Signal Strength Over Time'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Message Stats Chart
+const messageCtx = document.getElementById('messageChart').getContext('2d');
+const messageChart = new Chart(messageCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Received', 'Delivered', 'Failed', 'Pending'],
+        datasets: [{
+            label: 'Message Count',
+            data: [0, 0, 0, 0], // Will be updated via API
+            backgroundColor: [
+                'rgba(0, 180, 180, 0.5)',
+                'rgba(0, 204, 153, 0.5)',
+                'rgba(255, 102, 102, 0.5)',
+                'rgba(255, 179, 102, 0.5)'
+            ],
+            borderColor: [
+                'rgb(0, 180, 180)',
+                'rgb(0, 204, 153)',
+                'rgb(255, 102, 102)',
+                'rgb(255, 179, 102)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Message Statistics'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Real-time updates
+function updateCharts() {
+    fetch(`/api/device/${deviceId}/analytics`)
+        .then(response => response.json())
+        .then(data => {
+            // Update signal chart
+            signalChart.data.labels = data.timestamps;
+            signalChart.data.datasets[0].data = data.signal_values;
+            signalChart.update();
+
+            // Update message chart
+            messageChart.data.datasets[0].data = [
+                data.messages.received,
+                data.messages.delivered,
+                data.messages.failed,
+                data.messages.pending
+            ];
+            messageChart.update();
+        });
+}
+
+// Update every 5 seconds
+setInterval(updateCharts, 5000);
+</script> 

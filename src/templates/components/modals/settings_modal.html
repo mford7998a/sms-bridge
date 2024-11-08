@@ -1,0 +1,57 @@
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-card-bg rounded-lg max-w-2xl mx-auto mt-20 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Settings</h2>
+            <button onclick="hideSettingsModal()" class="text-gray-500 hover:text-gray-400">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form hx-post="/api/settings" hx-swap="none" class="space-y-6">
+            <!-- SMSHUB Settings -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium">SMSHUB Configuration</h3>
+                <div>
+                    <label class="block text-sm font-medium mb-1">API Key</label>
+                    <input type="password" name="smshub_api_key" 
+                           value="{{settings.smshub_api_key}}"
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">API URL</label>
+                    <input type="text" name="smshub_url" 
+                           value="{{settings.smshub_url}}"
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+            </div>
+
+            <!-- System Settings -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium">System Settings</h3>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Poll Interval (seconds)</label>
+                    <input type="number" name="poll_interval" 
+                           value="{{settings.poll_interval}}"
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Max Retry Attempts</label>
+                    <input type="number" name="max_retries" 
+                           value="{{settings.max_retries}}"
+                           class="w-full rounded border-gray-600 bg-secondary-bg text-text-primary">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="hideSettingsModal()" 
+                        class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 rounded bg-accent-color hover:bg-accent-hover">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div> 

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Android Device Configuration - SMS Bridge</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body class="bg-primary-bg text-text-primary">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Navigation -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Android Device Configuration</h1>
+            <a href="/" class="text-accent-color hover:text-accent-hover">← Back to Dashboard</a>
+        </div>
+
+        <!-- Device Selection -->
+        <div class="bg-card-bg rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Select Device</h2>
+            <select id="deviceSelect" class="w-full rounded border-gray-300 p-2"
+                    hx-get="/api/device-config" 
+                    hx-target="#configOptions">
+                {% for device in android_devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.model}} ({{device.port}})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="configForm" class="bg-card-bg rounded-lg shadow p-6 mb-8"
+              hx-post="/api/android/configure"
+              hx-target="#configLog">
+            <h2 class="text-xl font-semibold mb-4">Configuration Options</h2>
+            
+            <!-- Basic Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Basic Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_debug" class="mr-2">
+                        Enable USB Debugging
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="set_airplane_mode" class="mr-2">
+                        Toggle Airplane Mode
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Network Configuration</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="network_mode" class="mr-2">
+                        Set Network Mode
+                    </label>
+                    <div class="pl-6" data-show-if="network_mode">
+                        <select name="mode" class="mt-1 block w-full rounded border-gray-300">
+                            <option value="auto">Auto (All modes)</option>
+                            <option value="lte_only">4G/LTE Only</option>
+                            <option value="wcdma_only">WCDMA Only</option>
+                            <option value="gsm_only">GSM Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Advanced Options</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="root_access" class="mr-2">
+                        Enable Root Access
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="install_apk" class="mr-2">
+                        Install APK
+                    </label>
+                    <div class="pl-6" data-show-if="install_apk">
+                        <input type="file" name="apk_file" class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-accent-color hover:bg-accent-hover text-white font-semibold py-3 px-6 rounded">
+                Apply Configuration
+            </button>
+        </form>
+
+        <!-- Configuration Log -->
+        <div class="bg-card-bg rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Configuration Log</h2>
+            <div id="configLog" class="log-window">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show/hide sections based on device model
+        document.getElementById('deviceSelect').addEventListener('change', function() {
+            const model = this.value.toLowerCase();
+            document.querySelectorAll('[data-show-if]').forEach(el => {
+                const condition = el.dataset.showIf;
+                if (condition.startsWith('model_')) {
+                    el.style.display = model.includes(condition.replace('model_', '')) ? 'block' : 'none';
+                }
+            });
+        });
+
+        // Show/hide dependent fields
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const dependentFields = document.querySelectorAll(`[data-show-if="${this.name}"]`);
+                dependentFields.forEach(field => {
+                    field.style.display = this.checked ? 'block' : 'none';
+                });
+            });
+        });
+
+        // Handle form submission
+        htmx.on('#configForm', 'htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                const log = document.querySelector('#configLog');
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fibocom Modem Configuration - SMS Bridge</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body class="bg-primary-bg text-text-primary">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Navigation -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Fibocom Modem Configuration</h1>
+            <a href="/" class="text-accent-color hover:text-accent-hover">← Back to Dashboard</a>
+        </div>
+
+        <!-- Device Selection -->
+        <div class="bg-card-bg rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Select Device</h2>
+            <select id="deviceSelect" class="w-full rounded border-gray-300 p-2"
+                    hx-get="/api/device-config" 
+                    hx-target="#configOptions">
+                {% for device in fibocom_devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.model}} ({{device.port}})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Configuration Form -->
+        <form id="configForm" class="bg-card-bg rounded-lg shadow p-6 mb-8"
+              hx-post="/api/fibocom/configure"
+              hx-target="#configLog">
+            <h2 class="text-xl font-semibold mb-4">Configuration Options</h2>
+            
+            <!-- Basic Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Basic Settings</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_engineering" class="mr-2">
+                        Enable Engineering Mode
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="set_power_mode" class="mr-2">
+                        Set Optimal Power Mode
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_thermal" class="mr-2">
+                        Enable Thermal Mitigation
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Network Configuration</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="network_mode" class="mr-2">
+                        Set Network Mode
+                    </label>
+                    <div class="pl-6" data-show-if="network_mode">
+                        <select name="mode" class="mt-1 block w-full rounded border-gray-300">
+                            <option value="auto">Auto (All modes)</option>
+                            <option value="lte_only">4G/LTE Only</option>
+                            <option value="wcdma_only">WCDMA Only</option>
+                        </select>
+                    </div>
+
+                    <label class="flex items-center">
+                        <input type="checkbox" name="band_config" class="mr-2">
+                        Configure Bands
+                    </label>
+                    <div class="pl-6 space-y-2" data-show-if="band_config">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="band_all" class="mr-2">
+                            Enable All Bands
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_us" class="mr-2">
+                                US Bands
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_eu" class="mr-2">
+                                EU Bands
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="band_asia" class="mr-2">
+                                Asian Bands
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USB Mode -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">USB Mode</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="usb_mode" class="mr-2">
+                        Set USB Mode
+                    </label>
+                    <div class="pl-6" data-show-if="usb_mode">
+                        <select name="usb_mode_type" class="mt-1 block w-full rounded border-gray-300">
+                            <option value="mbim">MBIM</option>
+                            <option value="ecm">ECM</option>
+                            <option value="rndis">RNDIS</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firmware Update -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Firmware Update</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="firmware_update" class="mr-2">
+                        Update Firmware
+                    </label>
+                    <div class="pl-6" data-show-if="firmware_update">
+                        <input type="file" name="firmware_file" class="mt-1 block w-full rounded border-gray-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="config-section mb-6">
+                <h3 class="text-lg font-medium mb-3">Advanced Options</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="carrier_aggregation" class="mr-2">
+                        Enable Carrier Aggregation
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="volte" class="mr-2">
+                        Enable VoLTE
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-accent-color hover:bg-accent-hover text-white font-semibold py-3 px-6 rounded">
+                Apply Configuration
+            </button>
+        </form>
+
+        <!-- Configuration Log -->
+        <div class="bg-card-bg rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Configuration Log</h2>
+            <div id="configLog" class="log-window">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show/hide sections based on device model
+        document.getElementById('deviceSelect').addEventListener('change', function() {
+            const model = this.value.toLowerCase();
+            document.querySelectorAll('[data-show-if]').forEach(el => {
+                const condition = el.dataset.showIf;
+                if (condition.startsWith('model_')) {
+                    el.style.display = model.includes(condition.replace('model_', '')) ? 'block' : 'none';
+                }
+            });
+        });
+
+        // Show/hide dependent fields
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const dependentFields = document.querySelectorAll(`[data-show-if="${this.name}"]`);
+                dependentFields.forEach(field => {
+                    field.style.display = this.checked ? 'block' : 'none';
+                });
+            });
+        });
+
+        // Handle form submission
+        htmx.on('#configForm', 'htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                const log = document.querySelector('#configLog');
+                log.scrollTop = log.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 
