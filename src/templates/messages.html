@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - SMS Bridge{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Message Management</h1>
+        <div class="space-x-4">
+            <button onclick="showSendMessage()" class="btn-primary">
+                <i class="fas fa-paper-plane mr-2"></i>Send Message
+            </button>
+            <button onclick="showBatchMessages()" class="btn-secondary">
+                <i class="fas fa-layer-group mr-2"></i>Batch Send
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Filters -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Device</label>
+                <select id="deviceFilter" class="w-full rounded-md" onchange="applyFilters()">
+                    <option value="">All Devices</option>
+                    {% for device in devices %}
+                    <option value="{{device.id}}">{{device.id}} - {{device.phone_number}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Status</label>
+                <select id="statusFilter" class="w-full rounded-md" onchange="applyFilters()">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Date Range</label>
+                <div class="flex space-x-2">
+                    <input type="date" id="startDate" class="w-full rounded-md" onchange="applyFilters()">
+                    <input type="date" id="endDate" class="w-full rounded-md" onchange="applyFilters()">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Search</label>
+                <input type="text" id="searchFilter" 
+                       class="w-full rounded-md"
+                       placeholder="Search messages..."
+                       onkeyup="debounce(applyFilters, 500)()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Table -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                        <tr>
+                            <th class="table-header">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th class="table-header">Time</th>
+                            <th class="table-header">Device</th>
+                            <th class="table-header">From</th>
+                            <th class="table-header">To</th>
+                            <th class="table-header">Message</th>
+                            <th class="table-header">Status</th>
+                            <th class="table-header">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700"
+                           hx-get="/api/messages" 
+                           hx-trigger="load, every 10s"
+                           hx-include="[id='filters']">
+                        {% for message in messages %}
+                        <tr>
+                            <td class="table-cell">
+                                <input type="checkbox" value="{{message.id}}" class="message-select">
+                            </td>
+                            <td class="table-cell">{{message.received_at|datetime}}</td>
+                            <td class="table-cell">{{message.device_id}}</td>
+                            <td class="table-cell">{{message.from_number}}</td>
+                            <td class="table-cell">{{message.to_number}}</td>
+                            <td class="table-cell">
+                                <div class="max-w-xs truncate">{{message.text}}</div>
+                            </td>
+                            <td class="table-cell">
+                                <span class="status-badge status-{{message.status}}">
+                                    {{message.status}}
+                                </span>
+                            </td>
+                            <td class="table-cell">
+                                <button onclick="showMessageDetails('{{message.id}}')" 
+                                        class="btn-icon" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="resendMessage('{{message.id}}')" 
+                                        class="btn-icon" title="Resend">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button onclick="deleteMessage('{{message.id}}')" 
+                                        class="btn-icon text-red-500" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+            Showing {{pagination.start}} to {{pagination.end}} of {{pagination.total}} messages
+        </div>
+        <div class="space-x-2">
+            <button onclick="changePage({{pagination.current - 1}})"
+                    class="btn-secondary"
+                    {% if pagination.current == 1 %}disabled{% endif %}>
+                Previous
+            </button>
+            <button onclick="changePage({{pagination.current + 1}})"
+                    class="btn-secondary"
+                    {% if pagination.current == pagination.total_pages %}disabled{% endif %}>
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Message Details Modal -->
+<div id="messageDetailsModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="text-lg font-semibold">Message Details</h3>
+            <button onclick="hideModal('messageDetailsModal')" class="text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Message ID</label>
+                    <div id="messageId" class="text-sm"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Device Information</label>
+                    <div id="deviceInfo" class="text-sm"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">From</label>
+                    <div id="messageFrom" class="text-sm"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">To</label>
+                    <div id="messageTo" class="text-sm"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Message Content</label>
+                    <div id="messageContent" class="text-sm whitespace-pre-wrap"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Status History</label>
+                    <div id="statusHistory" class="text-sm space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Message Modal -->
+<div id="sendMessageModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="text-lg font-semibold">Send New Message</h3>
+            <button onclick="hideModal('sendMessageModal')" class="text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="sendMessageForm" onsubmit="sendMessage(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Device</label>
+                        <select name="device_id" class="w-full rounded-md" required>
+                            {% for device in devices %}
+                            <option value="{{device.id}}">{{device.id}} - {{device.phone_number}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">To Number</label>
+                        <input type="text" name="to_number" class="w-full rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Message</label>
+                        <textarea name="message" class="w-full rounded-md" rows="4" required></textarea>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span id="charCount">0</span>/160 characters
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" onclick="hideModal('sendMessageModal')" class="btn-secondary">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Send Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='js/messages.js') }}"></script>
+{% endblock %} 

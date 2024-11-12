@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMS Bridge Dashboard{% endblock %}</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', path='css/theme.css') }}" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/htmx.org@1.9.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2/build/global/luxon.min.js"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold text-gray-800 dark:text-white">SMS Bridge</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                            Dashboard
+                        </a>
+                        <a href="/devices" class="nav-link {% if request.path == '/devices' %}active{% endif %}">
+                            Devices
+                        </a>
+                        <a href="/messages" class="nav-link {% if request.path == '/messages' %}active{% endif %}">
+                            Messages
+                        </a>
+                        <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">
+                            Settings
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center">
+                    <div class="ml-3 relative">
+                        <div>
+                            <button type="button" class="user-menu-button">
+                                <span class="sr-only">Open user menu</span>
+                                <img class="h-8 w-8 rounded-full" src="{{ url_for('static', path='img/avatar.png') }}" alt="">
+                            </button>
+                        </div>
+                        <div class="user-menu hidden">
+                            <a href="/profile" class="menu-item">Your Profile</a>
+                            <a href="/settings" class="menu-item">Settings</a>
+                            <a href="/logout" class="menu-item">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modals Container -->
+    <div id="modalsContainer">
+        {% include "components/modals/add_device_modal.html" %}
+        {% include "components/modals/device_stats_modal.html" %}
+        {% include "components/modals/settings_modal.html" %}
+        {% include "components/modals/system_logs_modal.html" %}
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
+
+    <!-- Base Scripts -->
+    <script src="{{ url_for('static', path='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', path='js/websocket.js') }}"></script>
+    <script src="{{ url_for('static', path='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', path='js/notifications.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html> 

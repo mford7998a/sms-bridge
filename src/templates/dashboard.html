@@ -1,198 +1,124 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SMS Bridge - Admin Dashboard</title>
-    <script src="https://unpkg.com/htmx.org"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css">
-</head>
-<body class="bg-primary-bg text-text-primary">
-    <!-- Top Navigation Bar -->
-    <nav class="navbar fixed w-full z-10 px-4 py-2 flex items-center justify-between">
-        <div class="flex items-center">
-            <img src="/static/img/logo.png" alt="SMS Bridge" class="h-8 mr-4">
-            <h1 class="text-xl font-bold">SMS Bridge Dashboard</h1>
-        </div>
-        <div class="flex items-center space-x-4">
-            <button class="btn-secondary" onclick="toggleTheme()">
-                <i class="fas fa-moon"></i>
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SMS Bridge{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">System Dashboard</h1>
+        <div class="space-x-4">
+            <button onclick="showAddDevice()" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i>Add Device
             </button>
-            <button class="btn-primary" onclick="showSettings()">
-                <i class="fas fa-cog"></i> Settings
+            <button onclick="showBatchOperations()" class="btn-secondary">
+                <i class="fas fa-tasks mr-2"></i>Batch Operations
             </button>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 pt-16">
-        <!-- System Overview Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="card p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold">Active Devices</h3>
-                    <i class="fas fa-mobile-alt text-2xl text-accent-color"></i>
-                </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold" hx-get="/api/stats/active-devices" hx-trigger="every 5s">
-                        {{active_devices_count}}
-                    </span>
-                    <span class="text-sm text-gray-500">/ {{total_devices}}</span>
-                </div>
+    <!-- System Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Active Devices -->
+        <div class="stat-card">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Active Devices</h3>
+                <i class="fas fa-mobile-alt text-2xl text-primary"></i>
             </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold">Messages Today</h3>
-                    <i class="fas fa-envelope text-2xl text-accent-color"></i>
-                </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold" hx-get="/api/stats/messages-today" hx-trigger="every 5s">
-                        {{messages_today}}
-                    </span>
-                    <div class="text-sm text-gray-500">
-                        <span class="text-success">{{success_rate}}% Success</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold">System Health</h3>
-                    <i class="fas fa-heartbeat text-2xl text-accent-color"></i>
-                </div>
-                <div class="mt-4">
-                    <div class="flex items-center">
-                        <div class="w-2/3 bg-gray-200 rounded-full h-2.5">
-                            <div class="bg-success h-2.5 rounded-full health-bar" data-health="{{system_health}}"></div>
-                        </div>
-                        <span class="ml-2">{{system_health}}%</span>
-                    </div>
-                    <div class="text-sm text-gray-500 mt-2">
-                        Uptime: {{uptime}}
-                    </div>
-                </div>
-            </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold">Queue Status</h3>
-                    <i class="fas fa-tasks text-2xl text-accent-color"></i>
-                </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold" hx-get="/api/stats/queue-size" hx-trigger="every 5s">
-                        {{queue_size}}
-                    </span>
-                    <div class="text-sm text-gray-500">
-                        Messages in queue
-                    </div>
-                </div>
+            <div class="mt-4">
+                <span class="text-3xl font-bold" hx-get="/api/stats/active-devices" hx-trigger="every 5s">
+                    {{active_devices_count}}
+                </span>
+                <span class="text-sm text-gray-500">/ {{total_devices}}</span>
             </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex space-x-4 mb-8">
-            <button class="btn-primary" onclick="showAddDevice()">
-                <i class="fas fa-plus"></i> Add Device
-            </button>
-            <button class="btn-secondary" onclick="showBatchOperations()">
-                <i class="fas fa-layer-group"></i> Batch Operations
-            </button>
-            <button class="btn-secondary" onclick="exportData()">
-                <i class="fas fa-file-export"></i> Export Data
-            </button>
-            <button class="btn-secondary" onclick="showSystemLogs()">
-                <i class="fas fa-terminal"></i> System Logs
-            </button>
-        </div>
-
-        <!-- Devices Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {% for device in devices %}
-            <div class="card device-card p-6" id="device-{{device.id}}">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold">{{device.type}} - {{device.id}}</h3>
-                        <p class="text-sm text-gray-500">{{device.phone_number}}</p>
-                    </div>
-                    <div class="signal-strength">
-                        <div class="signal-bars">
-                            {% for i in range(5) %}
-                            <div class="signal-bar h-{{i+2}} {% if device.signal_strength > i*20 %}signal-active{% endif %}"></div>
-                            {% endfor %}
-                        </div>
-                        <div class="text-xs text-center">{{device.signal_strength}}%</div>
-                    </div>
-                </div>
-
-                <!-- Status Badge -->
-                <div class="mb-4">
-                    <span class="status-badge {{device.status}}">
-                        {{device.status}}
-                    </span>
-                </div>
-
-                <!-- Device Details -->
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">SIM ICCID:</span>
-                        <span class="font-mono">{{device.sim_iccid or 'N/A'}}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Messages Today:</span>
-                        <span>{{device.messages_today}}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Last Seen:</span>
-                        <span>{{device.last_seen|relative_time}}</span>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="mt-4 flex space-x-2">
-                    <button class="flex-1 btn-primary" onclick="configureDevice('{{device.id}}')">
-                        <i class="fas fa-cog"></i> Configure
-                    </button>
-                    <button class="flex-1 btn-secondary" onclick="showDeviceStats('{{device.id}}')">
-                        <i class="fas fa-chart-line"></i> Stats
-                    </button>
-                    <button class="flex-1 btn-error" onclick="removeDevice('{{device.id}}')">
-                        <i class="fas fa-trash"></i> Remove
-                    </button>
-                </div>
+        <!-- Messages Today -->
+        <div class="stat-card">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Messages Today</h3>
+                <i class="fas fa-envelope text-2xl text-primary"></i>
             </div>
-            {% endfor %}
+            <div class="mt-4">
+                <span class="text-3xl font-bold" hx-get="/api/stats/messages-today" hx-trigger="every 5s">
+                    {{messages_today}}
+                </span>
+            </div>
         </div>
 
-        <!-- Message Queue -->
-        <div class="card p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Message Queue</h2>
+        <!-- System Status -->
+        <div class="stat-card">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">System Status</h3>
+                <i class="fas fa-server text-2xl text-primary"></i>
+            </div>
+            <div class="mt-4">
+                <span class="text-3xl font-bold text-green-500">Healthy</span>
+            </div>
+        </div>
+
+        <!-- Error Rate -->
+        <div class="stat-card">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Error Rate</h3>
+                <i class="fas fa-exclamation-triangle text-2xl text-primary"></i>
+            </div>
+            <div class="mt-4">
+                <span class="text-3xl font-bold" hx-get="/api/stats/error-rate" hx-trigger="every 5s">
+                    {{error_rate}}%
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device List -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold">Connected Devices</h2>
+        </div>
+        <div class="p-6">
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead>
                         <tr>
-                            <th class="text-left">Time</th>
-                            <th class="text-left">From</th>
-                            <th class="text-left">To</th>
-                            <th class="text-left">Status</th>
-                            <th class="text-left">Actions</th>
+                            <th class="table-header">Device ID</th>
+                            <th class="table-header">Type</th>
+                            <th class="table-header">Phone Number</th>
+                            <th class="table-header">Status</th>
+                            <th class="table-header">Signal</th>
+                            <th class="table-header">Actions</th>
                         </tr>
                     </thead>
-                    <tbody hx-get="/api/messages/queue" hx-trigger="every 5s">
-                        {% for message in queued_messages %}
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700"
+                           hx-get="/api/devices" 
+                           hx-trigger="every 5s">
+                        {% for device in devices %}
                         <tr>
-                            <td>{{message.received_at|format_time}}</td>
-                            <td>{{message.from_number}}</td>
-                            <td>{{message.to_number}}</td>
-                            <td>
-                                <span class="status-badge {{message.status}}">
-                                    {{message.status}}
+                            <td class="table-cell">{{device.id}}</td>
+                            <td class="table-cell">{{device.type}}</td>
+                            <td class="table-cell">{{device.phone_number}}</td>
+                            <td class="table-cell">
+                                <span class="status-badge status-{{device.status}}">
+                                    {{device.status}}
                                 </span>
                             </td>
-                            <td>
-                                <button class="btn-secondary btn-sm" onclick="retryMessage('{{message.id}}')">
-                                    <i class="fas fa-redo"></i> Retry
+                            <td class="table-cell">
+                                <div class="signal-strength" style="--signal: {{device.signal_strength}}%">
+                                    {{device.signal_strength}}%
+                                </div>
+                            </td>
+                            <td class="table-cell">
+                                <button onclick="showDeviceStats('{{device.id}}')" 
+                                        class="btn-icon" title="View Stats">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                                <button onclick="showDeviceConfig('{{device.id}}')" 
+                                        class="btn-icon" title="Configure">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <button onclick="removeDevice('{{device.id}}')" 
+                                        class="btn-icon text-red-500" title="Remove">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
@@ -203,60 +129,43 @@
         </div>
     </div>
 
-    <!-- Modals -->
-    {% include "components/add_device_modal.html" %}
-    {% include "components/device_stats_modal.html" %}
-    {% include "components/batch_operations_modal.html" %}
-    {% include "components/system_logs_modal.html" %}
-    {% include "components/settings_modal.html" %}
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Message Activity Chart -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Message Activity</h3>
+            <canvas id="messageActivityChart"></canvas>
+        </div>
 
-    <script>
-        // Theme Toggle
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-        }
+        <!-- Signal Strength Chart -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Signal Strength</h3>
+            <canvas id="signalStrengthChart"></canvas>
+        </div>
+    </div>
 
-        // Device Configuration
-        function configureDevice(deviceId) {
-            const deviceType = document.querySelector(`#device-${deviceId}`).dataset.type;
-            window.location.href = `/${deviceType}-config?device=${deviceId}`;
-        }
+    <!-- Recent System Logs -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Recent System Logs</h2>
+            <button onclick="showSystemLogs()" class="btn-text">
+                View All Logs
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4" hx-get="/api/logs/recent" hx-trigger="every 10s">
+                {% for log in recent_logs %}
+                <div class="log-entry log-{{log.level}}">
+                    <span class="text-sm text-gray-500">{{log.timestamp}}</span>
+                    <span class="font-mono">{{log.message}}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-        // Device Statistics
-        function showDeviceStats(deviceId) {
-            const modal = document.getElementById('deviceStatsModal');
-            modal.classList.remove('hidden');
-            loadDeviceStats(deviceId);
-        }
-
-        // Initialize Charts
-        const messageChart = new Chart(
-            document.getElementById('messageChart'),
-            {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Messages',
-                        data: [],
-                        borderColor: 'rgb(0, 180, 180)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    }
-                }
-            }
-        );
-
-        // Update charts periodically
-        setInterval(updateCharts, 5000);
-    </script>
-</body>
-</html> 
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='js/dashboard.js') }}"></script>
+{% endblock %} 

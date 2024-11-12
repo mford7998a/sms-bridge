@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Device Configuration - SMS Bridge{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Device Configuration</h1>
+        <div class="space-x-4">
+            <button onclick="saveAllConfigs()" class="btn-primary">
+                <i class="fas fa-save mr-2"></i>Save All Changes
+            </button>
+            <button onclick="resetAllConfigs()" class="btn-secondary">
+                <i class="fas fa-undo mr-2"></i>Reset All
+            </button>
+        </div>
+    </div>
+
+    <!-- Device Selection -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div class="flex items-center space-x-4">
+            <label class="text-lg font-medium">Select Device:</label>
+            <select id="deviceSelect" 
+                    class="rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900"
+                    onchange="loadDeviceConfig()">
+                {% for device in devices %}
+                <option value="{{device.id}}">{{device.id}} - {{device.type}} ({{device.phone_number}})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Configuration Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Basic Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Basic Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Device Name</label>
+                    <input type="text" id="deviceName" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Phone Number</label>
+                    <input type="text" id="phoneNumber" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Port/Connection</label>
+                    <input type="text" id="connection" class="w-full rounded-md">
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Advanced Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Baudrate</label>
+                    <select id="baudrate" class="w-full rounded-md">
+                        <option value="9600">9600</option>
+                        <option value="115200">115200</option>
+                        <option value="230400">230400</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Timeout (seconds)</label>
+                    <input type="number" id="timeout" class="w-full rounded-md" min="1" max="60">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Retry Attempts</label>
+                    <input type="number" id="retryAttempts" class="w-full rounded-md" min="1" max="10">
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Network Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Network Mode</label>
+                    <select id="networkMode" class="w-full rounded-md">
+                        <option value="auto">Automatic</option>
+                        <option value="4g">4G/LTE Only</option>
+                        <option value="3g">3G Only</option>
+                        <option value="2g">2G Only</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Preferred Bands</label>
+                    <select id="preferredBands" class="w-full rounded-md" multiple>
+                        <option value="b1">Band 1 (2100 MHz)</option>
+                        <option value="b2">Band 2 (1900 MHz)</option>
+                        <option value="b3">Band 3 (1800 MHz)</option>
+                        <option value="b4">Band 4 (AWS)</option>
+                        <option value="b5">Band 5 (850 MHz)</option>
+                        <option value="b7">Band 7 (2600 MHz)</option>
+                        <option value="b8">Band 8 (900 MHz)</option>
+                        <option value="b12">Band 12 (700 MHz)</option>
+                        <option value="b13">Band 13 (700 MHz)</option>
+                        <option value="b20">Band 20 (800 MHz)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Roaming</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="allowRoaming">
+                        <span class="text-sm">Allow Roaming</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Message Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Message Format</label>
+                    <select id="messageFormat" class="w-full rounded-md">
+                        <option value="text">Text Mode</option>
+                        <option value="pdu">PDU Mode</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Character Set</label>
+                    <select id="characterSet" class="w-full rounded-md">
+                        <option value="GSM">GSM</option>
+                        <option value="UCS2">UCS2</option>
+                        <option value="IRA">IRA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Message Center Number</label>
+                    <input type="text" id="smscNumber" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Delivery Reports</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="deliveryReports">
+                        <span class="text-sm">Enable Delivery Reports</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device-Specific Settings -->
+    <div id="deviceSpecificSettings">
+        <!-- Dynamically loaded based on device type -->
+    </div>
+
+    <!-- Status and Actions -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-semibold">Device Status</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Last Updated: <span id="lastUpdated">Never</span>
+                </p>
+            </div>
+            <div class="space-x-4">
+                <button onclick="testConnection()" class="btn-secondary">
+                    <i class="fas fa-plug mr-2"></i>Test Connection
+                </button>
+                <button onclick="resetDevice()" class="btn-warning">
+                    <i class="fas fa-power-off mr-2"></i>Reset Device
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='js/device_config.js') }}"></script>
+{% endblock %} 

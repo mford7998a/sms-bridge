@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - SMS Bridge{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">System Settings</h1>
+        <div class="space-x-4">
+            <button onclick="saveAllSettings()" class="btn-primary">
+                <i class="fas fa-save mr-2"></i>Save All Changes
+            </button>
+            <button onclick="resetAllSettings()" class="btn-secondary">
+                <i class="fas fa-undo mr-2"></i>Reset All
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- General Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">General Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">System Name</label>
+                    <input type="text" id="systemName" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Admin Email</label>
+                    <input type="email" id="adminEmail" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Theme</label>
+                    <select id="theme" class="w-full rounded-md">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System Default</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Language</label>
+                    <select id="language" class="w-full rounded-md">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMS Hub Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">SMS Hub Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">API Key</label>
+                    <input type="password" id="smsHubApiKey" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Base URL</label>
+                    <input type="url" id="smsHubBaseUrl" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Retry Attempts</label>
+                    <input type="number" id="smsHubRetries" class="w-full rounded-md" min="1" max="10">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Connection Timeout (seconds)</label>
+                    <input type="number" id="smsHubTimeout" class="w-full rounded-md" min="1" max="60">
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Device Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Device Scan Interval (seconds)</label>
+                    <input type="number" id="deviceScanInterval" class="w-full rounded-md" min="1" max="60">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Message Check Interval (seconds)</label>
+                    <input type="number" id="messageCheckInterval" class="w-full rounded-md" min="1" max="60">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Default Baudrate</label>
+                    <select id="defaultBaudrate" class="w-full rounded-md">
+                        <option value="9600">9600</option>
+                        <option value="115200">115200</option>
+                        <option value="230400">230400</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Auto-Reconnect</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="autoReconnect">
+                        <span class="text-sm">Enable automatic reconnection</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Notification Settings</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email Notifications</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="notifyErrors">
+                            <span class="text-sm">Notify on errors</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="notifyDeviceStatus">
+                            <span class="text-sm">Notify on device status changes</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="notifyLowBalance">
+                            <span class="text-sm">Notify on low balance</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Notification Email</label>
+                    <input type="email" id="notificationEmail" class="w-full rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Low Balance Threshold</label>
+                    <input type="number" id="lowBalanceThreshold" class="w-full rounded-md" min="0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Settings -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Advanced Settings</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Log Level</label>
+                    <select id="logLevel" class="w-full rounded-md">
+                        <option value="DEBUG">Debug</option>
+                        <option value="INFO">Info</option>
+                        <option value="WARNING">Warning</option>
+                        <option value="ERROR">Error</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Log Retention (days)</label>
+                    <input type="number" id="logRetention" class="w-full rounded-md" min="1" max="365">
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Database Backup</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="enableBackup">
+                        <span class="text-sm">Enable automatic backups</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Backup Interval (hours)</label>
+                    <input type="number" id="backupInterval" class="w-full rounded-md" min="1" max="168">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Backup Location</label>
+                    <input type="text" id="backupLocation" class="w-full rounded-md">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-semibold">System Information</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Version: <span id="systemVersion">{{version}}</span>
+                </p>
+            </div>
+            <div class="space-x-4">
+                <button onclick="checkUpdates()" class="btn-secondary">
+                    <i class="fas fa-sync mr-2"></i>Check for Updates
+                </button>
+                <button onclick="exportSettings()" class="btn-secondary">
+                    <i class="fas fa-download mr-2"></i>Export Settings
+                </button>
+                <button onclick="importSettings()" class="btn-secondary">
+                    <i class="fas fa-upload mr-2"></i>Import Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Settings Modal -->
+<div id="importSettingsModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="text-lg font-semibold">Import Settings</h3>
+            <button onclick="hideModal('importSettingsModal')" class="text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Settings File</label>
+                    <input type="file" id="settingsFile" accept=".json" class="w-full">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="overwriteExisting">
+                    <span class="text-sm">Overwrite existing settings</span>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button onclick="hideModal('importSettingsModal')" class="btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="confirmImport()" class="btn-primary">
+                    Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='js/settings.js') }}"></script>
+{% endblock %} 

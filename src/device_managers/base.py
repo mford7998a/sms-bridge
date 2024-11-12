@@ -1,90 +1,121 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict
 import serial
 import logging
-from src.models import Device, SMS
 import asyncio
+from datetime import datetime
+
+from src.models import Device, SMS
+from src.database.manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
-class ModemCommand:
-    CHECK_SIGNAL = "AT+CSQ"
-    CHECK_SMS = "AT+CMGL=\"ALL\""
-    DELETE_SMS = "AT+CMGD={}"
-    SET_SMS_MODE = "AT+CMGF=1"  # Text mode
-    GET_IMEI = "AT+CGSN"
-    GET_SIM_STATUS = "AT+CPIN?"
-    GET_OPERATOR = "AT+COPS?"
-    USB_MODE_SWITCH = "AT^SETPORT="
-
 class BaseModemManager(ABC):
-    def __init__(self):
-        self.timeout = 5
-        self.baudrate = 115200
+    def __init__(self, db: DatabaseManager):
+        self.db = db
+        self._ports = {}  # Store serial connections
 
-    async def send_at_command(self, port: str, command: str, 
-                            wait_time: float = 1.0) -> Optional[str]:
+    async def initialize(self, device: Device) -> bool:
+        """Initialize device connection and configuration"""
         try:
-            with serial.Serial(port, self.baudrate, timeout=self.timeout) as ser:
-                cmd = f"{command}\r\n".encode()
-                ser.write(cmd)
-                await asyncio.sleep(wait_time)
+            # Open serial port
+            if not await self._open_port(device):
+                return False
                 
-                response = ""
-                while ser.in_waiting:
-                    response += ser.readline().decode('utf-8', errors='ignore')
+            # Basic initialization sequence
+            if not await self._initialize_modem(device):
+                return False
                 
-                return response.strip()
+            # Update device status
+            await self.db.update_device_status(device.id, "online")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error sending AT command {command}: {str(e)}")
-            return None
+            logger.error(f"Device initialization error: {str(e)}")
+            await self.db.update_device_status(device.id, "error")
+            return False
 
-    @abstractmethod
-    async def check_status(self, device: Device) -> str:
-        pass
+    async def cleanup(self, device: Device):
+        """Cleanup device resources"""
+        try:
+            await self._close_port(device)
+            await self.db.update_device_status(device.id, "offline")
+        except Exception as e:
+            logger.error(f"Device cleanup error: {str(e)}")
 
     @abstractmethod
     async def check_messages(self, device: Device) -> List[SMS]:
+        """Check for new messages"""
         pass
 
-    async def configure_modem(self, device: Device) -> bool:
-        """Basic modem configuration"""
-        try:
-            # Set SMS text mode
-            response = await self.send_at_command(device.port, ModemCommand.SET_SMS_MODE)
-            if "OK" not in response:
-                return False
+    @abstractmethod
+    async def send_message(self, device: Device, to_number: str, text: str) -> bool:
+        """Send SMS message"""
+        pass
 
-            # Additional device-specific configuration can be added in child classes
+    @abstractmethod
+    async def get_signal_strength(self, device: Device) -> Optional[int]:
+        """Get current signal strength"""
+        pass
+
+    async def _open_port(self, device: Device) -> bool:
+        """Open serial port connection"""
+        try:
+            if device.id in self._ports:
+                return True
+                
+            ser = serial.Serial(
+                port=device.port,
+                baudrate=115200,
+                timeout=1
+            )
+            self._ports[device.id] = ser
             return True
+            
         except Exception as e:
-            logger.error(f"Error configuring modem: {str(e)}")
+            logger.error(f"Port open error: {str(e)}")
             return False
 
-    async def parse_sms_response(self, response: str) -> List[dict]:
-        """Generic SMS response parser"""
-        messages = []
-        lines = response.split('\n')
-        current_msg = None
+    async def _close_port(self, device: Device):
+        """Close serial port connection"""
+        try:
+            if device.id in self._ports:
+                self._ports[device.id].close()
+                del self._ports[device.id]
+        except Exception as e:
+            logger.error(f"Port close error: {str(e)}")
 
-        for line in lines:
-            if line.startswith('+CMGL:'):
-                if current_msg:
-                    messages.append(current_msg)
+    async def _send_at_command(self, device: Device, command: str, 
+                             timeout: int = 1) -> Optional[str]:
+        """Send AT command and get response"""
+        try:
+            ser = self._ports.get(device.id)
+            if not ser:
+                return None
                 
-                # Parse message header
-                parts = line.split(',')
-                current_msg = {
-                    'index': int(parts[0].split(':')[1].strip()),
-                    'status': parts[1].strip('"'),
-                    'from': parts[2].strip('"'),
-                    'timestamp': parts[4].strip('"') + ',' + parts[5].strip('"'),
-                    'text': ''
-                }
-            elif current_msg is not None:
-                current_msg['text'] = line.strip()
+            # Clear input buffer
+            ser.reset_input_buffer()
+            
+            # Send command
+            ser.write(f"{command}\r\n".encode())
+            
+            # Wait for response
+            response = ""
+            start_time = datetime.now()
+            while (datetime.now() - start_time).seconds < timeout:
+                if ser.in_waiting:
+                    response += ser.read(ser.in_waiting).decode()
+                    if "OK" in response or "ERROR" in response:
+                        break
+                await asyncio.sleep(0.1)
+                
+            return response.strip()
+            
+        except Exception as e:
+            logger.error(f"AT command error: {str(e)}")
+            return None
 
-        if current_msg:
-            messages.append(current_msg)
-
-        return messages 
+    @abstractmethod
+    async def _initialize_modem(self, device: Device) -> bool:
+        """Initialize modem with basic AT commands"""
+        pass
